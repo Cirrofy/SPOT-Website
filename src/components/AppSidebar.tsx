@@ -14,7 +14,6 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-// Import komponen AlertDialog yang sudah Anda buat
 import {
   AlertDialog,
   AlertDialogAction,
@@ -45,7 +44,6 @@ export function AppSidebar() {
   const { signOut } = useAuth();
   const navigate = useNavigate();
   
-  // Fungsi handleLogout dikembalikan seperti semula tanpa window.confirm
   const handleLogout = async () => {
     await signOut();
     navigate("/login", { replace: true });

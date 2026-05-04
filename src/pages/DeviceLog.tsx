@@ -1,15 +1,58 @@
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import { devices, deviceLogs } from "@/lib/mockData";
 import { DeviceCard } from "@/components/DeviceCard";
 import NotFound from "./NotFound";
+import { supabase } from "@/lib/supabase";
 
 export default function DeviceLog() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
-  const device = devices.find((d) => d.id === id);
+  
+  const [device, setDevice] = useState<any>(null);
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDeviceAndLogs = async () => {
+      // 1. Ambil detail perangkat
+      const { data: deviceData } = await supabase
+        .from("devices")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      // 2. Ambil riwayat pergerakan (motion_logs)
+      const { data: logsData } = await supabase
+        .from("motion_logs")
+        .select("*")
+        .eq("device_id", id)
+        .order("recorded_at", { ascending: false })
+        .limit(50); // Batasi 50 log terakhir agar tabel tidak terlalu berat
+
+      if (deviceData) setDevice(deviceData);
+      
+      if (logsData) {
+        // Format data agar sesuai dengan struktur tabel HTML Anda
+        const formattedLogs = logsData.map((log) => {
+          const dateObj = new Date(log.recorded_at);
+          return {
+            time: dateObj.toLocaleString("id-ID"), // Format waktu lokal Indonesia
+            event: `Pergerakan terdeteksi (G-Force: ${log.acc_peak})`,
+            alert: true // Bisa disesuaikan logikanya jika ada event yang bukan alert
+          };
+        });
+        setLogs(formattedLogs);
+      }
+      
+      setLoading(false);
+    };
+
+    if (id) fetchDeviceAndLogs();
+  }, [id]);
+
+  if (loading) return <p className="p-6">Memuat log aktivitas...</p>;
   if (!device) return <NotFound />;
-  const logs = deviceLogs[id] ?? [];
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -18,7 +61,7 @@ export default function DeviceLog() {
           <ArrowLeft className="h-7 w-7" />
         </button>
         <h1 className="text-4xl font-bold heading-underline inline-block">
-          Log Aktivitas Perangkat: {device.name}
+          Log Aktivitas: {device.name}
         </h1>
       </div>
 
@@ -31,12 +74,18 @@ export default function DeviceLog() {
             </tr>
           </thead>
           <tbody>
-            {logs.map((log, i) => (
-              <tr key={i} className="border-t border-border">
-                <td className={`py-3 px-4 ${log.alert ? "text-primary font-bold" : ""}`}>[{log.time}]</td>
-                <td className={`py-3 px-4 ${log.alert ? "text-primary font-bold" : ""}`}>{log.event}</td>
+            {logs.length === 0 ? (
+              <tr>
+                <td colSpan={2} className="py-4 text-center text-muted-foreground">Belum ada riwayat aktivitas.</td>
               </tr>
-            ))}
+            ) : (
+              logs.map((log, i) => (
+                <tr key={i} className="border-t border-border">
+                  <td className={`py-3 px-4 text-center ${log.alert ? "text-primary font-bold" : ""}`}>{log.time}</td>
+                  <td className={`py-3 px-4 ${log.alert ? "text-primary font-bold" : ""}`}>{log.event}</td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>

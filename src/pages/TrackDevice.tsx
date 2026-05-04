@@ -5,6 +5,8 @@ import { GoogleMap, useJsApiLoader, Marker, Polyline } from "@react-google-maps/
 import { devices } from "@/lib/mockData";
 import { DeviceCard } from "@/components/DeviceCard";
 import NotFound from "./NotFound";
+// 1. IMPORT HOOK MQTT
+import { useMqtt } from "@/hooks/useMQTT";
 
 const mapContainerStyle = {
   width: "100%",
@@ -18,7 +20,9 @@ export default function TrackDevice() {
   const navigate = useNavigate();
   const device = devices.find((d) => d.id === id);
 
-  // State untuk menyimpan lokasi asli pengguna dari browser
+  // 2. PANGGIL HOOK MQTT
+  const { sensorData, isConnected } = useMqtt();
+
   const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
   const [locationError, setLocationError] = useState<string>("");
 
@@ -27,12 +31,25 @@ export default function TrackDevice() {
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY, 
   });
 
-  const devicePos = useMemo(() => ({
-    lat: device?.lat || defaultDevicePosition.lat,
-    lng: device?.lng || defaultDevicePosition.lng,
-  }), [device]);
+  // 3. UBAH LOGIKA devicePos
+  const devicePos = useMemo(() => {
+    // Cek apakah ada data dari MQTT. 
+    // Catatan: Jika lat & lng bernilai 0, berarti GPS Neo-6M belum mendapat "Fix" satelit.
+    if (sensorData && sensorData.lat !== 0 && sensorData.lng !== 0) {
+      return { 
+        lat: sensorData.lat, 
+        lng: sensorData.lng 
+      };
+    }
+    
+    // Fallback: Jika MQTT belum mengirim data atau GPS masih 0.000, 
+    // gunakan data dari mock (atau nantinya dari database Supabase)
+    return {
+      lat: device?.lat || defaultDevicePosition.lat,
+      lng: device?.lng || defaultDevicePosition.lng,
+    };
+  }, [device, sensorData]); // Pastikan sensorData masuk ke dalam array dependency!
 
-  // Mengambil lokasi pengguna saat komponen dimuat
   useEffect(() => {
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
@@ -65,7 +82,18 @@ export default function TrackDevice() {
       </div>
       
       <div className="flex justify-between items-end">
-        <p className="text-sm text-muted-foreground">Terakhir diperbarui beberapa detik lalu</p>
+        {/* 4. UPDATE INDIKATOR STATUS */}
+        <p className="text-sm text-muted-foreground flex items-center gap-2">
+          Status: 
+          {isConnected ? (
+            <span className="text-green-500 font-medium animate-pulse">● Live Tracking Aktif</span>
+          ) : (
+            <span className="text-orange-500 font-medium">Menghubungkan ke perangkat...</span>
+          )}
+          {sensorData?.sats === 0 && isConnected && (
+             <span className="text-red-500 ml-2">(Mencari sinyal satelit GPS...)</span>
+          )}
+        </p>
         {locationError && <p className="text-sm text-red-500 font-medium">{locationError}</p>}
       </div>
 
@@ -84,7 +112,7 @@ export default function TrackDevice() {
               mapTypeControl: false,
             }}
           >
-            {/* Marker Perangkat yang dilacak */}
+            {/* Sisa kode marker dan polyline tidak perlu diubah, karena devicePos sudah otomatis reaktif! */}
             <Marker 
               position={devicePos}
               label={{ 
@@ -94,7 +122,6 @@ export default function TrackDevice() {
               }}
             />
 
-            {/* Marker Posisi Anda (Hanya render jika userPos sudah didapatkan) */}
             {userPos && (
               <>
                 <Marker 
@@ -107,7 +134,6 @@ export default function TrackDevice() {
                   }}
                 />
                 
-                {/* Garis Jarak */}
                 <Polyline
                   path={[userPos, devicePos]}
                   options={{
