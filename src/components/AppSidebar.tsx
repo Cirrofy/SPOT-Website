@@ -13,6 +13,20 @@ import {
   SidebarHeader,
   useSidebar,
 } from "@/components/ui/sidebar";
+
+// Import komponen AlertDialog yang sudah Anda buat
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"; 
+
 import logo from "@/assets/spot-logo.png";
 
 const mainItems = [
@@ -30,6 +44,8 @@ export function AppSidebar() {
   const { pathname } = useLocation();
   const { signOut } = useAuth();
   const navigate = useNavigate();
+  
+  // Fungsi handleLogout dikembalikan seperti semula tanpa window.confirm
   const handleLogout = async () => {
     await signOut();
     navigate("/login", { replace: true });
@@ -81,17 +97,39 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu className="gap-2">
               {accountItems.map(renderItem)}
+              
+              {/* Implementasi AlertDialog pada menu Logout */}
               <SidebarMenuItem>
-                <SidebarMenuButton
-                  onClick={handleLogout}
-                  className="h-12 rounded-xl hover:bg-sidebar-accent"
-                >
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground shrink-0">
-                    <LogOut className="h-5 w-5" />
-                  </span>
-                  {!collapsed && <span className="font-semibold flex-1 text-left">Logout</span>}
-                </SidebarMenuButton>
+                <AlertDialog>
+                  {/* Gunakan asChild agar gaya SidebarMenuButton tidak tertimpa oleh default button */}
+                  <AlertDialogTrigger asChild>
+                    <SidebarMenuButton className="h-12 rounded-xl hover:bg-sidebar-accent w-full cursor-pointer">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground shrink-0">
+                        <LogOut className="h-5 w-5" />
+                      </span>
+                      {!collapsed && <span className="font-semibold flex-1 text-left">Logout</span>}
+                    </SidebarMenuButton>
+                  </AlertDialogTrigger>
+                  
+                  {/* Konten Pop-up Konfirmasi */}
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Konfirmasi Logout</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Apakah Anda yakin ingin keluar dari akun ini? Anda harus memasukkan kredensial kembali untuk mengakses Dasbor SPOT.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Batal</AlertDialogCancel>
+                      {/* Fungsi handleLogout disematkan pada tombol konfirmasi akhir */}
+                      <AlertDialogAction onClick={handleLogout}>
+                        Ya, Logout
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </SidebarMenuItem>
+
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
