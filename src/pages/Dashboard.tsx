@@ -92,7 +92,7 @@ export default function Dashboard() {
                     <MonitorSmartphone className="h-5 w-5 text-primary shrink-0" /> {d.name}
                   </span>
                   <span className="flex items-center gap-1.5 font-semibold">
-                    <Battery className="h-5 w-5 text-primary" /> {d.battery_percentage ?? 0}%
+                    <Battery className="h-5 w-5 text-primary" /> {d.battery_percentage ?? 100}%
                   </span>
                 </div>
               ))
