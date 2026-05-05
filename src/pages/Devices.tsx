@@ -42,7 +42,7 @@ export default function Devices() {
       // Jika terdeteksi di MQTT maka Connected, jika tidak gunakan fallback is_active dari Supabase
       status: isOnline ? "Connected" : (d.is_active ? "Connected" : "Disconnected"),
       // Gunakan baterai dari MQTT (jika ada), jika tidak gunakan dari DB
-      battery: liveData.battery !== undefined ? liveData.battery : (d.battery_percentage || 0),
+      battery: liveData.battery !== undefined ? liveData.battery : (d.battery_percentage || 100),
       // Mode dari DB (atau fallback Unlocked)
       mode: d.mode || "Unlocked",
     };

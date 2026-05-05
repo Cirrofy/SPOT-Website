@@ -72,7 +72,7 @@ export default function DeviceLog() {
     id: device.id,
     name: device.name,
     status: isOnline ? "Connected" : (device.is_active ? "Connected" : "Disconnected"),
-    battery: liveData.battery !== undefined ? liveData.battery : (device.battery_percentage || 0),
+    battery: liveData.battery !== undefined ? liveData.battery : (device.battery_percentage || 100),
     mode: device.mode || "Unlocked",
   };
 
