@@ -1,6 +1,7 @@
 # Tugas Besar II3240 Rekayasa Sistem dan Teknologi Informasi
 
 
+<img width="1411" height="488.73" alt="image" src="https://photos.app.goo.gl/xXR8QudHKnztD1adA" />
 ## SPOT: Smart Protection & Object Tracker - Web Dashboard
 
 *Website* ini dikembangkan dalam rangka memenuhi tugas besar II3240 Rekayasa Sistem dan Teknologi Informasi.
@@ -41,17 +42,25 @@ Digunakan sebagai jembatan komunikasi real-time dua arah antara ESP32 (perangkat
 
 ### D. Screenshot Website
 #### Register
+<img width="1919" height="910" alt="image" src="https://github.com/user-attachments/assets/25e57774-2063-4d29-97cd-038a428c1e59" />
 
 #### Login
+<img width="1919" height="910" alt="image" src="https://github.com/user-attachments/assets/4b123fe1-c97a-4d44-91ea-b56736df3684" />
 
 #### Dashboard Analitik
+<img width="1898" height="905" alt="image" src="https://github.com/user-attachments/assets/caa83670-26cf-4aad-b688-46b72b6ec86d" />
 
 #### Daftar Perangkat SPOT
+<img width="1919" height="909" alt="image" src="https://github.com/user-attachments/assets/fc916c3e-510e-4a07-b8ca-687e459b3299" />
 
 #### Lacak Perangkat SPOT
+<img width="1899" height="906" alt="image" src="https://github.com/user-attachments/assets/a18577f5-a03b-44aa-a5a2-3028722fd70d" />
 
 #### Log Aktivitas Perangkat SPOT
+<img width="1897" height="906" alt="image" src="https://github.com/user-attachments/assets/4b7e4c2d-cf8b-41c5-8f1a-86d14a413fcd" />
 
 #### Edit Profile
+<img width="1901" height="906" alt="image" src="https://github.com/user-attachments/assets/b021eca6-c810-4582-8ac7-1fa56907a2d4" />
 
 #### Logout
+<img width="1919" height="905" alt="image" src="https://github.com/user-attachments/assets/ef1684e8-055e-469a-9c86-55bee978bdee" />
