@@ -1,3 +1,57 @@
-# Welcome to your Lovable project
+# Tugas Besar II3240 Rekayasa Sistem dan Teknologi Informasi
 
-TODO: Document your project here
+
+## SPOT: Smart Protection & Object Tracker - Web Dashboard
+
+*Website* ini dikembangkan dalam rangka memenuhi tugas besar II3240 Rekayasa Sistem dan Teknologi Informasi.
+Kelompok 5
+Anggota:
+- Ratukhansa Salsabila / 18223034
+- Favian Rafi Laftiyanto / 18223036
+- Rafli Dwi Nugraha / 18223038
+- Florecita Natawirya / 18223040
+
+### A. Deskripsi
+
+SPOT (Smart Protection & Object Tracker) adalah sistem keamanan IoT terintegrasi berupa perangkat yang dilengkapi dengan dashboard pemantauan berbasis web. Aplikasi dashboard ini memungkinkan pengguna untuk melacak lokasi perangkat secara real-time, memantau status baterai perangkat keras, memantau log aktivitas perangkat, manajemen akun, dan pemantauan visualisasi dan data analitik.
+
+Layanan dashboard ini dapat diakses pada: **https://spot.cirro.my.id/** (Di-deploy menggunakan GitHub Pages).
+
+Layanan Web Dashboard ini dikembangkan dengan memanfaatkan integrasi Hybrid antara Backend-as-a-Service (BaaS) dan protokol WebSockets (MQTT). Berikut adalah layanan yang dimanfaatkan pada dashboard ini:
+1. **Supabase (Backend & Database)**: Digunakan sebagai penyimpanan basis data relasional (PostgreSQL) untuk profil pengguna, kredensial perangkat, serta menyimpan riwayat log notifikasi (Alarm, Activity, Lock). Supabase juga menangani sistem autentikasi pengguna secara aman.
+2. **HiveMQ (MQTT Broker)**:
+Digunakan sebagai jembatan komunikasi real-time dua arah antara ESP32 (perangkat keras SPOT) dan antarmuka website. Layanan ini menangani telemetry sensor (GPS, accelerometer, baterai) dan command execution (Buzzer).
+
+### B. Fitur Utama
+
+1. **Real-time Device Tracking**: Melacak titik koordinat GPS perangkat keras secara presisi di atas Google Maps terintegrasi, menampilkan posisi alat sekaligus posisi terkini dari pengguna.
+2. **Device Status Monitoring**: Memantau indikator vital perangkat keras (persentase baterai, status Online/Offline, Mode perangkat) yang diperbarui secara instan melalui tangkapan data payload MQTT dan fetch data Supabase.
+3. **Data Analytics & Visualization**: Memantau data analitik seperti jumlah perangkat yang terhubung, banyaknya deteksi pergerakan dalam tujuh hari terakhir, hingga visualisasi *Line Chart* banyaknya deteksi pergerakan objek setiap harinya.
+4. **Device Activity Log Monitoring**: Memantau log aktivitas perangkat SPOT yang terhubung dengan suatu akun, mulai dari peringatan deteksi pergerakan, perubahan mode, hingga status koneksi.
+5. **Manajemen Akun**: Membuat akun baru, masuk ke dalam suatu akun yang sudah terdaftar, mengubah foto profil, dan mengubah password akun.
+
+### C. Technology Stack yang Digunakan
+- **Frontend Framework**: React.js.
+- **Build Tool & Language**: Vite dan TypeScript.
+- **Styling & UI Components**: Tailwind CSS dan shadcn/ui.
+- **Backend, Database & Auth**: Supabase (PostgreSQL).
+- **IoT Communication**: MQTT HiveMQ.
+- **Maps API**: React Google Maps API.
+- **Deployment**: GitHub Pages (Custom Domain: spot.cirro.my.id).
+
+### D. Screenshot Website
+#### Register
+
+#### Login
+
+#### Dashboard Analitik
+
+#### Daftar Perangkat SPOT
+
+#### Lacak Perangkat SPOT
+
+#### Log Aktivitas Perangkat SPOT
+
+#### Edit Profile
+
+#### Logout
