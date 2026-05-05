@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Link } from "react-router-dom";
-import pattern from "@/assets/auth-pattern.jpg";
+import pattern from "@/assets/auth-pattern.png";
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (

@@ -1,11 +1,10 @@
 import { useMemo, useState, useEffect } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { GoogleMap, useJsApiLoader, Marker, Polyline } from "@react-google-maps/api";
-import { devices } from "@/lib/mockData";
+import { supabase } from "@/lib/supabase";
 import { DeviceCard } from "@/components/DeviceCard";
 import NotFound from "./NotFound";
-// 1. IMPORT HOOK MQTT
 import { useMqtt } from "@/hooks/useMQTT";
 
 const mapContainerStyle = {
@@ -13,16 +12,19 @@ const mapContainerStyle = {
   height: "100%",
 };
 
+// Default posisi (misal: Kampus ITB) jika belum ada data GPS
 const defaultDevicePosition = { lat: -6.8900, lng: 107.6120 };
 
 export default function TrackDevice() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
-  const device = devices.find((d) => d.id === id);
 
-  // 2. PANGGIL HOOK MQTT
-  const { sensorData, isConnected } = useMqtt();
+  const [device, setDevice] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
+  // Ambil liveDeviceStatuses dari MQTT Hook
+  const { sensorData, isConnected, liveDeviceStatuses } = useMqtt();
+  
   const [userPos, setUserPos] = useState<{ lat: number; lng: number } | null>(null);
   const [locationError, setLocationError] = useState<string>("");
 
@@ -31,24 +33,26 @@ export default function TrackDevice() {
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY, 
   });
 
-  // 3. UBAH LOGIKA devicePos
-  const devicePos = useMemo(() => {
-    // Cek apakah ada data dari MQTT. 
-    // Catatan: Jika lat & lng bernilai 0, berarti GPS Neo-6M belum mendapat "Fix" satelit.
-    if (sensorData && sensorData.lat !== 0 && sensorData.lng !== 0) {
-      return { 
-        lat: sensorData.lat, 
-        lng: sensorData.lng 
-      };
-    }
-    
-    // Fallback: Jika MQTT belum mengirim data atau GPS masih 0.000, 
-    // gunakan data dari mock (atau nantinya dari database Supabase)
-    return {
-      lat: device?.lat || defaultDevicePosition.lat,
-      lng: device?.lng || defaultDevicePosition.lng,
+  useEffect(() => {
+    const fetchDevice = async () => {
+      if (!id) return;
+      
+      const { data, error } = await supabase
+        .from("devices")
+        .select("*")
+        .eq("id", id)
+        .single();
+
+      if (error) {
+        console.error("Gagal mengambil data perangkat:", error);
+      } else if (data) {
+        setDevice(data);
+      }
+      setLoading(false);
     };
-  }, [device, sensorData]); // Pastikan sensorData masuk ke dalam array dependency!
+
+    fetchDevice();
+  }, [id]);
 
   useEffect(() => {
     if ("geolocation" in navigator) {
@@ -70,7 +74,34 @@ export default function TrackDevice() {
     }
   }, []);
 
+  const devicePos = useMemo(() => {
+    if (sensorData && sensorData.lat !== 0 && sensorData.lng !== 0) {
+      return { 
+        lat: sensorData.lat, 
+        lng: sensorData.lng 
+      };
+    }
+    
+    return {
+      lat: defaultDevicePosition.lat,
+      lng: defaultDevicePosition.lng,
+    };
+  }, [sensorData]); 
+
+  if (loading) return <p className="p-6 text-muted-foreground animate-pulse">Menyiapkan pelacakan...</p>;
   if (!device) return <NotFound />;
+
+  // Pemetaan data Supabase + MQTT Live Status
+  const liveData = liveDeviceStatuses?.[device.id] || {};
+  const isOnline = liveData.online === true || liveDeviceStatuses?.global_status === true;
+
+  const mappedDevice = {
+    id: device.id,
+    name: device.name,
+    status: isOnline ? "Connected" : (device.is_active ? "Connected" : "Disconnected"),
+    battery: liveData.battery !== undefined ? liveData.battery : (device.battery_percentage || 0),
+    mode: device.mode || "Unlocked",
+  };
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -82,7 +113,6 @@ export default function TrackDevice() {
       </div>
       
       <div className="flex justify-between items-end">
-        {/* 4. UPDATE INDIKATOR STATUS */}
         <p className="text-sm text-muted-foreground flex items-center gap-2">
           Status: 
           {isConnected ? (
@@ -112,7 +142,6 @@ export default function TrackDevice() {
               mapTypeControl: false,
             }}
           >
-            {/* Sisa kode marker dan polyline tidak perlu diubah, karena devicePos sudah otomatis reaktif! */}
             <Marker 
               position={devicePos}
               label={{ 
@@ -157,10 +186,11 @@ export default function TrackDevice() {
       </div>
 
       <DeviceCard
-        device={device}
+        device={mappedDevice}
         variant="footer"
         rightAction={{ label: "Lihat Log Aktivitas", href: `/log/${device.id}`, icon: "log" }}
       />
     </div>
   );
 }
+// </DeviceCard>

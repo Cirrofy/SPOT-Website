@@ -4,6 +4,8 @@ import { ArrowLeft } from "lucide-react";
 import { DeviceCard } from "@/components/DeviceCard";
 import NotFound from "./NotFound";
 import { supabase } from "@/lib/supabase";
+// 1. IMPORT HOOK MQTT
+import { useMqtt } from "@/hooks/useMQTT";
 
 export default function DeviceLog() {
   const { id = "" } = useParams();
@@ -12,6 +14,9 @@ export default function DeviceLog() {
   const [device, setDevice] = useState<any>(null);
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // 2. PANGGIL HOOK MQTT
+  const { liveDeviceStatuses } = useMqtt();
 
   useEffect(() => {
     const fetchDeviceAndLogs = async () => {
@@ -37,7 +42,7 @@ export default function DeviceLog() {
         const formattedLogs = logsData.map((log) => {
           const dateObj = new Date(log.recorded_at);
           return {
-            time: dateObj.toLocaleString("id-ID"), // Format waktu lokal Indonesia
+            time: dateObj.toLocaleString("id-ID", { timeZone: "UTC" }),
             event: `Pergerakan terdeteksi (G-Force: ${log.acc_peak})`,
             alert: true // Bisa disesuaikan logikanya jika ada event yang bukan alert
           };
@@ -54,6 +59,18 @@ export default function DeviceLog() {
   if (loading) return <p className="p-6">Memuat log aktivitas...</p>;
   if (!device) return <NotFound />;
 
+  // 3. PEMETAAN DATA SUPABASE + MQTT LIVE STATUS
+  const liveData = liveDeviceStatuses?.[device.id] || {};
+  const isOnline = liveData.online === true || liveDeviceStatuses?.global_status === true;
+
+  const mappedDevice = {
+    id: device.id,
+    name: device.name,
+    status: isOnline ? "Connected" : (device.is_active ? "Connected" : "Disconnected"),
+    battery: liveData.battery !== undefined ? liveData.battery : (device.battery_percentage || 0),
+    mode: device.mode || "Unlocked",
+  };
+
   return (
     <div className="space-y-6 max-w-5xl">
       <div className="flex items-center gap-3">
@@ -65,9 +82,11 @@ export default function DeviceLog() {
         </h1>
       </div>
 
-      <div className="rounded-2xl border border-border overflow-hidden">
+      {/* Tambahkan max-h-[480px] (bisa disesuaikan tingginya) dan overflow-y-auto */}
+      <div className="rounded-2xl border border-border overflow-hidden max-h-[480px] overflow-y-auto relative">
         <table className="w-full text-sm">
-          <thead>
+          {/* Tambahkan sticky top-0 dan z-10 agar judul kolom tidak ikut tergulir */}
+          <thead className="sticky top-0 z-10 shadow-sm">
             <tr className="bg-primary text-primary-foreground">
               <th className="py-3 px-4 text-center font-bold w-1/3">Timestamp</th>
               <th className="py-3 px-4 text-center font-bold">Aktivitas / Event</th>
@@ -90,8 +109,9 @@ export default function DeviceLog() {
         </table>
       </div>
 
+      {/* 4. GUNAKAN mappedDevice DI SINI */}
       <DeviceCard
-        device={device}
+        device={mappedDevice}
         variant="footer"
         rightAction={{ label: "Lacak Perangkat", href: `/track/${device.id}`, icon: "track" }}
       />

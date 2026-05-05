@@ -34,21 +34,23 @@ export default function Profile() {
     if (!user) return;
 
     // Ekstrak kata di depan "@" dari email pengguna
-    // Contoh: "budi.santoso@gmail.com" -> akan menjadi "budi.santoso"
     const defaultNameFromEmail = user.email ? user.email.split("@")[0] : "";
 
     supabase
       .from("profiles")
-      .select("full_name")
+      // 1. PERBAIKAN: Panggil juga kolom avatar_url dari database
+      .select("full_name, avatar_url") 
       .eq("id", user.id)
       .maybeSingle()
       .then(({ data }) => {
         if (data) {
-          // Jika data.full_name ada isinya, pakai itu.
-          // Tapi jika kosong (null/string kosong), otomatis pakai nama dari email.
           setDisplayName(data.full_name || defaultNameFromEmail); 
+          
+          // 2. PERBAIKAN: Masukkan URL foto ke dalam state jika datanya ada
+          if (data.avatar_url) {
+            setAvatarUrl(data.avatar_url);
+          }
         } else {
-          // Jaga-jaga jika baris profile pengguna belum terbuat sama sekali di database
           setDisplayName(defaultNameFromEmail);
         }
       });

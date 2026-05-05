@@ -3,34 +3,58 @@ import mqtt from 'mqtt';
 
 export function useMqtt() {
   const [client, setClient] = useState<mqtt.MqttClient | null>(null);
-  const [sensorData, setSensorData] = useState<any>(null); // Menyimpan data dari ESP32
+  const [sensorData, setSensorData] = useState<any>(null);
   const [isConnected, setIsConnected] = useState(false);
+  
+  // NEW: Dictionary untuk menyimpan status live dari MQTT
+  const [liveDeviceStatuses, setLiveDeviceStatuses] = useState<Record<string, any>>({});
 
   useEffect(() => {
-    // 1. Inisialisasi Koneksi menggunakan data dari .env
     const mqttClient = mqtt.connect(import.meta.env.VITE_MQTT_SERVER, {
       username: import.meta.env.VITE_MQTT_USER,
       password: import.meta.env.VITE_MQTT_PASSWORD,
-      protocol: 'wss', // Wajib WSS untuk Web
+      protocol: 'wss', 
     });
 
     mqttClient.on('connect', () => {
       console.log('Berhasil terhubung ke HiveMQ!');
       setIsConnected(true);
-      
-      // 2. Subscribe ke topik sensor saat terhubung
-      mqttClient.subscribe('esp32/sensor/data', (err) => {
-        if (!err) console.log('Subscribed to esp32/sensor/data');
-      });
+      mqttClient.subscribe('esp32/sensor/data');
+      mqttClient.subscribe('esp32/status'); // Subscribe topik LWT / Status
     });
 
-    // 3. Menangkap pesan yang masuk
     mqttClient.on('message', (topic, message) => {
+      const msgStr = message.toString();
+
+      // 1. Tangkap status LWT (Sama seperti logika teman Anda)
+      if (topic === 'esp32/status') {
+        // Karena payload ini bukan JSON, kita simpan sebagai status global sementara
+        // atau terapkan ke device "default" jika alat Anda baru satu.
+        setLiveDeviceStatuses((prev) => ({
+          ...prev,
+          global_status: msgStr === 'ONLINE', 
+        }));
+        return;
+      }
+
+      // 2. Tangkap data sensor / JSON
       if (topic === 'esp32/sensor/data') {
         try {
-          // Asumsi ESP32 mengirim data dalam format JSON
-          const parsedData = JSON.parse(message.toString());
+          const parsedData = JSON.parse(msgStr);
           setSensorData(parsedData);
+          
+          // Asumsi ID perangkat Anda dikirim dalam payload dengan key 'device_id' atau 'identifier'
+          const deviceId = parsedData.device_id || parsedData.identifier;
+          
+          if (deviceId) {
+            setLiveDeviceStatuses((prev) => ({
+              ...prev,
+              [deviceId]: {
+                online: true, // Pasti online karena mengirim data
+                battery: parsedData.battery || parsedData.battery_percentage
+              }
+            }));
+          }
         } catch (error) {
           console.error("Gagal parse JSON MQTT:", error);
         }
@@ -39,18 +63,16 @@ export function useMqtt() {
 
     setClient(mqttClient);
 
-    // 4. Cleanup connection saat komponen dilepas (unmount)
     return () => {
       mqttClient.end();
     };
   }, []);
 
-  // Fungsi untuk mengirim perintah ke Buzzer
   const triggerBuzzer = (status: "ON" | "OFF") => {
     if (client && isConnected) {
       client.publish('esp32/buzzer/control', JSON.stringify({ action: status }));
     }
   };
 
-  return { isConnected, sensorData, triggerBuzzer };
+  return { isConnected, sensorData, liveDeviceStatuses, triggerBuzzer };
 }
