@@ -4,7 +4,6 @@ import { ArrowLeft } from "lucide-react";
 import { DeviceCard } from "@/components/DeviceCard";
 import NotFound from "./NotFound";
 import { supabase } from "@/lib/supabase";
-// 1. IMPORT HOOK MQTT
 import { useMqtt } from "@/hooks/useMQTT";
 
 export default function DeviceLog() {
@@ -15,7 +14,6 @@ export default function DeviceLog() {
   const [logs, setLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // 2. PANGGIL HOOK MQTT
   const { liveDeviceStatuses } = useMqtt();
 
   useEffect(() => {
@@ -27,24 +25,31 @@ export default function DeviceLog() {
         .eq("id", id)
         .single();
 
-      // 2. Ambil riwayat pergerakan (motion_logs)
+      // 2. Ambil riwayat dari tabel notifications (menggantikan motion_logs)
       const { data: logsData } = await supabase
-        .from("motion_logs")
+        .from("notifications")
         .select("*")
         .eq("device_id", id)
-        .order("recorded_at", { ascending: false })
-        .limit(50); // Batasi 50 log terakhir agar tabel tidak terlalu berat
+        .order("created_at", { ascending: false }) // Gunakan created_at
+        .limit(50);
 
       if (deviceData) setDevice(deviceData);
       
       if (logsData) {
-        // Format data agar sesuai dengan struktur tabel HTML Anda
         const formattedLogs = logsData.map((log) => {
-          const dateObj = new Date(log.recorded_at);
+          const dateObj = new Date(log.created_at);
+          
+          // Ekstrak tipe event dari kolom JSONB 'data'
+          const eventType = log.data?.type || "unknown";
+          
+          // Tentukan apakah ini log yang perlu di-highlight (Activity / Alarm)
+          const isAlert = eventType === "activity" || eventType === "alarm";
+          
           return {
             time: dateObj.toLocaleString("id-ID", { timeZone: "UTC" }),
-            event: `Pergerakan terdeteksi (G-Force: ${log.acc_peak})`,
-            alert: true // Bisa disesuaikan logikanya jika ada event yang bukan alert
+            // Gabungkan title dan body agar lebih informatif
+            event: `${log.title} - ${log.body}`,
+            alert: isAlert
           };
         });
         setLogs(formattedLogs);
@@ -82,14 +87,12 @@ export default function DeviceLog() {
         </h1>
       </div>
 
-      {/* Tambahkan max-h-[480px] (bisa disesuaikan tingginya) dan overflow-y-auto */}
       <div className="rounded-2xl border border-border overflow-hidden max-h-[480px] overflow-y-auto relative">
         <table className="w-full text-sm">
-          {/* Tambahkan sticky top-0 dan z-10 agar judul kolom tidak ikut tergulir */}
           <thead className="sticky top-0 z-10 shadow-sm">
             <tr className="bg-primary text-primary-foreground">
               <th className="py-3 px-4 text-center font-bold w-1/3">Timestamp</th>
-              <th className="py-3 px-4 text-center font-bold">Aktivitas / Event</th>
+              <th className="py-3 px-4 text-left font-bold">Aktivitas / Event</th>
             </tr>
           </thead>
           <tbody>
@@ -101,7 +104,8 @@ export default function DeviceLog() {
               logs.map((log, i) => (
                 <tr key={i} className="border-t border-border">
                   <td className={`py-3 px-4 text-center ${log.alert ? "text-primary font-bold" : ""}`}>{log.time}</td>
-                  <td className={`py-3 px-4 ${log.alert ? "text-primary font-bold" : ""}`}>{log.event}</td>
+                  {/* Diubah menjadi text-left agar pesan yang panjang lebih mudah dibaca */}
+                  <td className={`py-3 px-4 text-left ${log.alert ? "text-primary font-bold" : ""}`}>{log.event}</td>
                 </tr>
               ))
             )}
@@ -109,7 +113,6 @@ export default function DeviceLog() {
         </table>
       </div>
 
-      {/* 4. GUNAKAN mappedDevice DI SINI */}
       <DeviceCard
         device={mappedDevice}
         variant="footer"
