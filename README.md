@@ -1,7 +1,7 @@
 # Tugas Besar II3240 Rekayasa Sistem dan Teknologi Informasi
 
 
-<img width="1411" height="488.73" alt="image" src="https://photos.app.goo.gl/xXR8QudHKnztD1adA" />
+<img width="1411" height="489" alt="image" src="https://github.com/user-attachments/assets/60490653-c047-4251-b1f4-12f7ed12acc3" />
 ## SPOT: Smart Protection & Object Tracker - Web Dashboard
 
 *Website* ini dikembangkan dalam rangka memenuhi tugas besar II3240 Rekayasa Sistem dan Teknologi Informasi.
