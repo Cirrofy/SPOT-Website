@@ -20,6 +20,7 @@ export default function TrackDevice() {
   const navigate = useNavigate();
 
   const [device, setDevice] = useState<any>(null);
+  const [dbLocation, setDbLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [loading, setLoading] = useState(true);
 
   // Ambil liveDeviceStatuses dari MQTT Hook
@@ -34,24 +35,39 @@ export default function TrackDevice() {
   });
 
   useEffect(() => {
-    const fetchDevice = async () => {
+    const fetchDeviceData = async () => {
       if (!id) return;
       
-      const { data, error } = await supabase
+      // 1. Ambil data perangkat
+      const { data: deviceData, error: deviceError } = await supabase
         .from("devices")
         .select("*")
         .eq("id", id)
         .single();
 
-      if (error) {
-        console.error("Gagal mengambil data perangkat:", error);
-      } else if (data) {
-        setDevice(data);
+      if (deviceError) console.error("Gagal mengambil data perangkat:", deviceError);
+      else if (deviceData) setDevice(deviceData);
+
+      // 2. Ambil LOKASI TERAKHIR dari tabel device_locations
+      const { data: locData, error: locError } = await supabase
+        .from("device_locations")
+        .select("lat, lng")
+        .eq("device_id", id)
+        .order("recorded_at", { ascending: false }) // Urutkan dari yang terbaru
+        .limit(1)
+        .maybeSingle();
+
+      if (locError) {
+        console.error("Gagal mengambil lokasi terakhir:", locError);
+      } else if (locData && locData.lat && locData.lng) {
+        // Konversi tipe numeric database ke number JavaScript
+        setDbLocation({ lat: Number(locData.lat), lng: Number(locData.lng) }); 
       }
+
       setLoading(false);
     };
 
-    fetchDevice();
+    fetchDeviceData();
   }, [id]);
 
   useEffect(() => {
@@ -75,6 +91,7 @@ export default function TrackDevice() {
   }, []);
 
   const devicePos = useMemo(() => {
+    // 1. Prioritas Utama: Data Real-time dari MQTT
     if (sensorData && sensorData.lat !== 0 && sensorData.lng !== 0) {
       return { 
         lat: sensorData.lat, 
@@ -82,11 +99,17 @@ export default function TrackDevice() {
       };
     }
     
+    // 2. Prioritas Kedua: Lokasi terakhir yang tersimpan di Database
+    if (dbLocation) {
+      return dbLocation;
+    }
+    
+    // 3. Fallback: Jika alat sama sekali belum pernah mengirim lokasi
     return {
       lat: defaultDevicePosition.lat,
       lng: defaultDevicePosition.lng,
     };
-  }, [sensorData]); 
+  }, [sensorData, dbLocation]); // Jangan lupa masukkan dbLocation ke dependency array 
 
   if (loading) return <p className="p-6 text-muted-foreground animate-pulse">Menyiapkan pelacakan...</p>;
   if (!device) return <NotFound />;
